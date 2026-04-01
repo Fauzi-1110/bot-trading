@@ -17,11 +17,14 @@ const {
     randomBotTrading,
     updateBotName,
     addBotEffect,
-    clearBotEffect
-} = require("./lib/func_bot.js")
+    clearBotEffect,
+    party_fc
+} = require("./lib/func_bot.js") 
+
 const {
     randItem,
-    randCoin
+    randCoin,
+    reset_volume
 } = require("./lib/func_cointem")
 
 if (!dbSystem)console.log("Error not find dbSystem file".red);
@@ -32,11 +35,7 @@ async function checkingGlobalDB() {
 checkingGlobalDB()
 
 Client.on("message", async (m) => {
-    try {
-        require("./System/message.js")(Client, m)
-    } catch (e) {
-        console.log(e.stack.red)
-    }
+    require("./System/message.js")(Client, m)
 })
 
 Client.on("callback_query", (q) => {
@@ -91,16 +90,17 @@ setInterval(async() => {
     const jam = now.format("HH")
     const menit = now.format("mm")
     const detik = now.format("ss")
-
+    
     if (detik === "20")randomBotTrading()
     if (detik === "00") {
-        randItem(); randCoin();
+        randItem(); randCoin(); 
     }
+    if(detik === "02") reset_volume();
 
     // waktu bot smarr
-    if (jam == "20" && menit == "01" && detik == "01") {
-        clearBotEffect("smart"); addBotEffect("smart", 5+dbSystem.getGlobalKey("season"))
-    }
+    if (jam == "20" && menit == "01" && detik == "01") { clearBotEffect("smart"); addBotEffect("smart", 5+dbSystem.getGlobalKey("season")) }
+    if (jam == "23" && menit == "01" && detik == "01") { clearBotEffect("smart"); addBotEffect("smart", 5+dbSystem.getGlobalKey("season")) }
+    if (jam == "02" && menit == "01" && detik == "01") { clearBotEffect("smart"); addBotEffect("smart", 5+dbSystem.getGlobalKey("season")) }
     if (jam == "04" && menit == "01" && detik == "01") clearBotEffect("smart")
 
     // waktubbuatbbot fast
@@ -114,4 +114,8 @@ setInterval(async() => {
         pajakHarian()
         resetProfitDaily()
     }
+    
+    //party
+    if(Number(menit) % 5 === 0 && Number(detik) === 0) party_fc.check_party()
+    if(menit === "00" && detik === "00")party_fc.check_party(true)
 }, 1000);

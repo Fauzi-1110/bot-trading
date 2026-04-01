@@ -9,9 +9,9 @@ const {
     sellVolume
 } = require("../lib/func_cointem.js")
 
-module.exports = (Client, q) => {
+module.exports = async (Client, q) => {
     try {
-        const qfc = parser.qParsingSimple(q)
+        const qfc = await parser.qParsingSimple(q)
 
         Client.answerCallbackQuery(qfc.query.id)
         const all = qfc.query.data

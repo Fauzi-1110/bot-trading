@@ -16,6 +16,7 @@
   "dependencies": {
     "chalk": "^4.1.2",
     "colors": "^1.4.0",
+    "lodash.merge": "^4.6.2",
     "moment-timezone": "^0.6.0",
     "node-telegram-bot-api": "^0.67.0",
     "uzi_telegram-parser": "github:Fauzi-1110/uzi_telegram-parser"
