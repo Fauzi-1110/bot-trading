@@ -307,7 +307,7 @@ module.exports = async (Client, m) => {
                 })
             } break
 
-            case "season-new": {
+            case "season_new": {
                 await reset_season()
                 fc.replyMsg("Berhasil membuat season baru ("+(dbSystem.getGlobalKey("season")+1)+")!")
             } break
