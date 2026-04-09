@@ -454,55 +454,28 @@ module.exports = async (Client, q) => {
                 }
 
                 //kaya
-                function takeKaya(data) {
-                    return data.uang
-                }
-
+                function takeKaya(data) { return data.uang }
+                
                 //trader
-                function takeTrader(data) {
-                    return data.jumlah_trading
-                }
-
-                //points
-                function takePoints(data) {
-                    return data.points
-                }
-
+                function takeTrader(data) { return data.jumlah_trading }
+                
                 //profit daily
-                function takeProfitDaily(data) {
-                    return data.total_profit
-                }
-                function takeProfitHigh(data) {
-                    return data.high_profit
-                }
+                function takeProfitDaily(data) { return data.total_profit }
+                function takeProfitHigh(data) { return data.high_profit }
 
                 //pekerjaan
-                function takePekerjaan(data) {
-                    return data.pekerjaan.pengalaman
-                }
-                function detailKerja(data) {
-                    return `pekerjaan: ${data.pekerjaan.pekerjaan}\n=> Pengalaman: ${formatNumber(data.pekerjaan.pengalaman)} `
-                }
+                function takePekerjaan(data) { return data.pekerjaan.pengalaman }
+                function detailKerja(data) { return `pekerjaan: ${data.pekerjaan.pekerjaan}\n=> Pengalaman: ${formatNumber(data.pekerjaan.pengalaman)} ` }
 
                 const urutan = allUser.sort((a, b) => {
                     let totalA, totalB
 
                     switch (args[0]) {
-                    case "sultan": {
-                            totalA = takeSultan(a); totalB = takeSultan(b)
-                        } break
-                    case "kaya": {
-                            totalA = takeKaya(a); totalB = takeKaya(b)} break
-                    case "trader": {
-                            totalA = takeTrader(a); totalB = takeTrader(b)} break
-                    case "points": {
-                            totalA = takePoints(a); totalB = takePoints(b)} break
-                    case "profit_daily": {
-                            totalA = takeProfitDaily(a); totalB = takeProfitDaily(b)} break
-                    case "profit_high": {
-                            totalA = takeProfitHigh(a); totalB = takeProfitHigh(b)} break
-                    case "pekerjaan": {
-                            totalA = takePekerjaan(a); totalB = takePekerjaan(b)} break
+                        case "sultan": { totalA = takeSultan(a); totalB = takeSultan(b) } break
+                        case "trader": { totalA = takeTrader(a); totalB = takeTrader(b)} break
+                        case "profit_daily": { totalA = takeProfitDaily(a); totalB = takeProfitDaily(b)} break
+                        case "profit_high": { totalA = takeProfitHigh(a); totalB = takeProfitHigh(b)} break
+                        case "pekerjaan": { totalA = takePekerjaan(a); totalB = takePekerjaan(b)} break
                     }
                     return totalB - totalA
                 })
@@ -512,21 +485,12 @@ module.exports = async (Client, q) => {
                     let totalAset
 
                     switch (args[0]) {
-                    case "sultan": {
-                            totalAset = takeSultan(a)} break
-                    case "kaya": {
-                            totalAset = takeKaya(a)} break
-                    case "trader": {
-                            totalAset = takeTrader(a)} break
-                    case "points": {
-                            totalAset = takePoints(a)} break
-                    case "profit_daily": {
-                            totalAset = takeProfitDaily(a)} break
-                    case "profit_high": {
-                            totalAset = takeProfitHigh(a)} break
-                    case "pekerjaan": {
-                            totalAset = detailKerja(a)
-                        } break
+                    case "sultan": { totalAset = takeSultan(a)} break
+                    case "kaya": { totalAset = takeKaya(a)} break
+                    case "trader": { totalAset = takeTrader(a)} break
+                    case "profit_daily": { totalAset = takeProfitDaily(a)} break
+                    case "profit_high": { totalAset = takeProfitHigh(a)} break
+                    case "pekerjaan": { totalAset = detailKerja(a)} break
                     }
 
                     return `${i+1}. ${a.nama}\n=> ${formatNumber(totalAset) || totalAset}`
@@ -543,10 +507,30 @@ module.exports = async (Client, q) => {
                     }
                 })
             } break
+            
+            
+            case "top_user": {
+                const all_user = dbSystem.getAllUser()
+                const all_user_entries = Object.entries(all_user)
+                const jenis = args[0]
+                
+                const tops = all_user_entries.sort(([_1, v1], [_2, v2]) => v2[jenis] - v1[jenis]).slice(0, 10)
+                const top = tops.map(([_, v], i) => {
+                                return `${i+1}. ${v.nama}\n=> ${jenis} dimiliki: ${formatNumber(v[jenis])}`
+                            }).join("\n\n")
+                            
+                const head = "🏆 Top user of "+jenis+" 🏆\n\n"
+                Client.editMessageText(head+top, {
+                    chat_id: qfc.chat.id,
+                    message_id: qfc.msg.id,
+                    reply_markup: { inline_keyboard: [] }
+                })
+            } break
+            
 
             case "lamar_pekerjaan": {
                 const pekerjaan_data = await dbSystem.getGlobalKey(`pekerjaan.${args[0]}`)[0]
-
+    
                 dbSystem.setUserKey(qfc.clicker.id, "pekerjaan.pekerjaan", args[0])
                 Client.editMessageText("Berhasil melamar pekerjaan "+args[0], {
                     chat_id: qfc.chat.id,

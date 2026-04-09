@@ -65,11 +65,7 @@ Client.on("message", async (m) => {
 })
 
 Client.on("callback_query", (q) => {
-    try {
-        require("./System/query.js")(Client, q)
-    } catch (e) {
-        console.log(e.stack.red)
-    }
+    require("./System/query.js")(Client, q)
 })
 
 function backup() {

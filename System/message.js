@@ -197,17 +197,11 @@ module.exports = async (Client, m) => {
             } break
 
             case "tradingcoin": {
-                const {
-                    balaceCoin,
-                    balaceChart,
-                    roadaCoin,
-                    roadaChart,
-                    flagCoin,
-                    flagChart,
-                    timenCoin,
-                    timenChart,
-                    loyaliCoin,
-                    loyaliChart
+                const { balaceCoin, balaceChart,
+                        roadaCoin, roadaChart,
+                        flagCoin, flagChart,
+                        timenCoin, timenChart,
+                        loyaliCoin, loyaliChart
                 } = dbSystem.getGlobal()
 
                 const {
@@ -262,46 +256,80 @@ module.exports = async (Client, m) => {
 
             case "lb":
             case "leaderboard": {
-                    if (Date.now() - dbSystem.getGlobalKey("last_season") < 1*24*60*60*1000) {
-                        Client.sendMessage(fc.from, "Leaderboard akan tersedia setelah 1 hari dari season")
-                        return
-                    }
+                if (Date.now() - dbSystem.getGlobalKey("last_season") < 1*24*60*60*1000) {
+                    Client.sendMessage(fc.from, "Leaderboard akan tersedia setelah 1 hari dari season")
+                    return
+                }
 
-                    Client.sendMessage(fc.from, "Pilih menu leaderboard", {
-                        reply_to_message_id: fc.msg.id,
-                        reply_markup: {
-                            inline_keyboard: [
-                                [{
-                                    text: "sultan", callback_data: "leaderboard sultan"
-                                }],
-                                [{
-                                    text: "top trader", callback_data: "leaderboard trader"
-                                }],
-                                [{
-                                    text: "profit (daily)", callback_data: "leaderboard profit_daily"
-                                }],
-                                [{
-                                    text: "profit high", callback_data: "leaderboard profit_high"
-                                }],
-                                [{
-                                    text: "pekerjaan", callback_data: "leaderboard pekerjaan"
-                                }],
-                                [{
-                                    text: "cancel", callback_data: "cancel"
-                                }],
-                            ]
-                        }
-                    })
-                } break
+                Client.sendMessage(fc.from, "Pilih menu leaderboard", {
+                    reply_to_message_id: fc.msg.id,
+                    reply_markup: {
+                        inline_keyboard: [
+                            [{
+                                text: "sultan", callback_data: "leaderboard sultan"
+                            }],
+                            [{
+                                text: "top trader", callback_data: "leaderboard trader"
+                            }],
+                            [{
+                                text: "profit (daily)", callback_data: "leaderboard profit_daily"
+                            }],
+                            [{
+                                text: "profit high", callback_data: "leaderboard profit_high"
+                            }],
+                            [{
+                                text: "pekerjaan", callback_data: "leaderboard pekerjaan"
+                            }],
+                            [{
+                                text: "cancel", callback_data: "cancel"
+                            }],
+                        ]
+                    }
+                })
+            } break
+            
+            case "top_user": {
+                Client.sendMessage(fc.from, "Pilih jenis top yang ingin dilihat:", {
+                    reply_markup: {
+                        inline_keyboard: [
+                            [{text: "perak", callback_data: "top_user perak"}, {text: "emas", callback_data: "top_user emas"}],
+                            [{text: "platinum", callback_data: "top_user platinum"}, {text: "diamond", callback_data: "top_user diamond"}],
+                            [{text: "balaceCoin", callback_data: "top_user balaceCoin"}, {text: "roadaCoin", callback_data: "top_user roadaCoin"}],
+                            [{text: "flagCoin", callback_data: "top_user flagCoin"}, {text: "timenCoin", callback_data: "top_user timenCoin"}],
+                            [{text: "loyaliCoin", callback_data: "top_user loyaliCoin"}, {text: "cash", callback_data: "top_user uang"}]
+                        ]
+                    }
+                })
+            } break
+            
+            case "top_bisnis": {
+                const all_user = dbSystem.getAllUser()
+                const daftar_bisnis = dbSystem.getGlobalKey("shop_on")
+                const bisnis_list = []
+                
+                //loop untuk buat data bisnis
+                for(let bisnis_temp_data of daftar_bisnis){
+                    const data = all_user[bisnis_temp_data.owner_id].bisnis[bisnis_temp_data.bisnis_id]
+                    bisnis_list.push(data)
+                }
+                
+                //urutkan bisnis
+                const top = bisnis_list.sort((a, b) => b.bisnis_total_pembeli - a.bisnis_total_pembeli).slice(0, 10)
+                const text_top = top.map((v, i) => `${i+1}. ${v.bisnis_nama}\n=> id: ${v.bisnis_id}\n=> owner id: ${v.bisnis_owner_id}\n=> type: ${v.bisnis_type}\n=> jumlah pembeli: ${v.bisnis_total_pembeli}`).join("\n\n")
+                const head = "🏪 Best of Market 🏪"
+                
+                //console.log(text_top)
+                fc.replyMsg(`${head}\n\n${text_top}`)
+            } break
 
             case "uang":
             case "money": {
-                    Client.sendMessage(fc.from, `Uangmu: \n=> ${formatNumber(dbSystem.getUserKey(fc.from, "uang"))}`, {
-                        reply_to_message_id: fc.msg.id
-                    })
-                } break
+                Client.sendMessage(fc.from, `Uangmu: \n=> ${formatNumber(dbSystem.getUserKey(fc.from, "uang"))}`, {
+                    reply_to_message_id: fc.msg.id
+                })
+            } break
 
-            case "total-trading": {
+            case "total_trading": {
                 Client.sendMessage(fc.from, `total trading mu: ${formatNumber(dbSystem.getUserKey(fc.from, "jumlah_trading"))}`, {
                     reply_to_message_id: fc.msg.id
                 })
