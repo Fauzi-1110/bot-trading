@@ -11,10 +11,30 @@ const {
 
 module.exports = async (Client, q) => {
     try {
-        const qfc = await parser.qParsingSimple(q)
-
-        Client.answerCallbackQuery(qfc.query.id)
-        const all = qfc.query.data
+        const Query = {
+            id: q.id,
+            data: q.data,
+            clicker: {
+                id: q.from.id,
+                first_name: q.from.first_name,
+                username: q.from.username
+            },
+            chat: {
+                id: q.message.chat.id,
+                type: q.message.chat.type,
+                first_name: q.message?.chat?.first_name,
+                username: q.message?.chat?.username,
+                title: q.message?.chat?.title,
+                normalize: q.message.chat?.first_name || q.message.chat?.title,
+            },
+            message: {
+                id: q.message.message_id,
+                date: q.message.date
+            }
+        }
+        
+        Client.answerCallbackQuery(Query.id)
+        const all = Query.data
         const args = all.split(" ").slice(1)
         const text = args.join(" ")
         const command = all.split(" ")[0]
@@ -24,8 +44,8 @@ module.exports = async (Client, q) => {
                 Client.editMessageReplyMarkup({
                     inline_keyboard: []
                 }, {
-                    chat_id: qfc.clicker.id,
-                    message_id: qfc.msg.id
+                    chat_id: Query.chat.id,
+                    message_id: Query.message.id
                 })
             } break
 
@@ -46,8 +66,8 @@ module.exports = async (Client, q) => {
                         }],
                     ]
                 }, {
-                    chat_id: qfc.clicker.id,
-                    message_id: qfc.msg.id
+                    chat_id: Query.chat.id,
+                    message_id: Query.message.id
                 })
             } break
 
@@ -78,8 +98,8 @@ module.exports = async (Client, q) => {
                                 }],
                             ]
                         }, {
-                            chat_id: qfc.clicker.id,
-                            message_id: qfc.msg.id
+                            chat_id: Query.chat.id,
+                            message_id: Query.message.id
                         })
 
                         return
@@ -87,23 +107,29 @@ module.exports = async (Client, q) => {
                         const itemName = ["harga"+command.split("buy")[1],
                             command.split("buy")[1].toLowerCase()]
                         const hSatu = dbSystem.getGlobalKey(itemName[0])
-                        const jumlah = Number(args[0]) || Math.floor(dbSystem.getUserKey(qfc.clicker.id, "uang")/hSatu)
+                        const jumlah = Number(args[0]) || Math.floor(dbSystem.getUserKey(Query.clicker.id, "uang")/hSatu)
                         const totalHarga = hSatu*jumlah
 
-                        if (jumlah < 0 || dbSystem.getUserKey(qfc.clicker.id, "uang") < totalHarga)return Client.editMessageText("Gagal melakukan transaksi (karena uang kurang/jumlah < 0)", {
-                            chat_id: qfc.clicker.id, message_id: qfc.msg.id, reply_markup: {
-                                inline_keyboard: []}})
+                        if (jumlah < 0 || dbSystem.getUserKey(Query.clicker.id, "uang") < totalHarga) {
+                            return Client.editMessageText("Gagal melakukan transaksi (karena uang kurang/jumlah < 0)", {
+                                chat_id: Query.chat.id, 
+                                message_id: Query.message.id,
+                                reply_markup: {
+                                    inline_keyboard: []
+                                }
+                            })
+                        }
                         if (["perak", "emas", "platinum", "diamond"].includes(itemName[1])) buyVolume(itemName[1], jumlah)
-                        dbSystem.setUserKey(qfc.clicker.id, "lastHarga", hSatu)
-                        dbSystem.addUserKey(qfc.clicker.id, itemName[1], jumlah)
-                        dbSystem.addUserKey(qfc.clicker.id, "uang", -totalHarga)
+                        dbSystem.setUserKey(Query.clicker.id, "lastHarga", hSatu)
+                        dbSystem.addUserKey(Query.clicker.id, itemName[1], jumlah)
+                        dbSystem.addUserKey(Query.clicker.id, "uang", -totalHarga)
 
                         //tambah ke total modal
-                        dbSystem.addUserKey(qfc.clicker.id, `profit.${itemName[1]}_modal`, totalHarga)
+                        dbSystem.addUserKey(Query.clicker.id, `profit.${itemName[1]}_modal`, totalHarga)
 
                         Client.editMessageText(`Berhasil melakuka pembelian!\nItem: ${itemName[1]}\nJumlah: ${formatNumber(jumlah)}\nTotal Harga: ${formatNumber(totalHarga)}`, {
-                            chat_id: qfc.clicker.id,
-                            message_id: qfc.msg.id,
+                            chat_id: Query.chat.id,
+                            message_id: Query.message.id,
                             reply_markup: {
                                 inline_keyboard: []
                             },
@@ -133,8 +159,8 @@ module.exports = async (Client, q) => {
                         }],
                     ]
                 }, {
-                    chat_id: qfc.clicker.id,
-                    message_id: qfc.msg.id
+                    chat_id: Query.chat.id,
+                    message_id: Query.message.id,
                 })
             } break
 
@@ -165,8 +191,8 @@ module.exports = async (Client, q) => {
                                 }],
                             ]
                         }, {
-                            chat_id: qfc.clicker.id,
-                            message_id: qfc.msg.id
+                            chat_id: Query.chat.id,
+                            message_id: Query.message.id,
                         })
 
                         return
@@ -174,45 +200,45 @@ module.exports = async (Client, q) => {
                         const itemName = ["harga"+command.split("sell")[1],
                             command.split("sell")[1].toLowerCase()]
                         const hSatu = dbSystem.getGlobalKey(itemName[0])
-                        const jumlah = Number(args[0]) || dbSystem.getUserKey(qfc.clicker.id, itemName[1])
+                        const jumlah = Number(args[0]) || dbSystem.getUserKey(Query.clicker.id, itemName[1])
                         const totalHarga = hSatu*jumlah
 
-                        if (jumlah <= 0 || dbSystem.getUserKey(qfc.clicker.id, itemName[1]) < jumlah)return Client.editMessageText("Gagal melakukan penjualan! (jumlah <= 0 atau barang dimiliki kurang)", {
-                            chat_id: qfc.clicker.id, message_id: qfc.msg.id, reply_markup: {
+                        if (jumlah <= 0 || dbSystem.getUserKey(Query.clicker.id, itemName[1]) < jumlah)return Client.editMessageText("Gagal melakukan penjualan! (jumlah <= 0 atau barang dimiliki kurang)", {
+                            chat_id: Query.chat.id, message_id: Query.message.id, reply_markup: {
                                 inline_keyboard: []}})
 
                         //profit
-                        const dimiliki = dbSystem.getUserKey(qfc.clicker.id, itemName[1])
-                        const total_modal = dbSystem.getUserKey(qfc.clicker.id, "profit."+itemName[1]+"_modal")
+                        const dimiliki = dbSystem.getUserKey(Query.clicker.id, itemName[1])
+                        const total_modal = dbSystem.getUserKey(Query.clicker.id, "profit."+itemName[1]+"_modal")
                         const hargaRata = Math.round(total_modal / dimiliki)
                         const hasilProfit = (hSatu - hargaRata) * jumlah
                         let upModal = total_modal - (hargaRata*jumlah)
                         if (dimiliki - jumlah === 0)upModal = 0
-                        dbSystem.setUserKey(qfc.clicker.id, `profit.${itemName[1]}_modal`, upModal)
-                        dbSystem.addUserKey(qfc.clicker.id, `profit.${itemName[1]}`, hasilProfit)
+                        dbSystem.setUserKey(Query.clicker.id, `profit.${itemName[1]}_modal`, upModal)
+                        dbSystem.addUserKey(Query.clicker.id, `profit.${itemName[1]}`, hasilProfit)
 
                         //totsl.profit
-                        const totalProfit = dbSystem.getUserKey(qfc.clicker.id, "profit.perak") +
-                        dbSystem.getUserKey(qfc.clicker.id, "profit.emas") +
-                        dbSystem.getUserKey(qfc.clicker.id, "profit.platinum") +
-                        dbSystem.getUserKey(qfc.clicker.id, "profit.diamond") +
-                        dbSystem.getUserKey(qfc.clicker.id, "profit.balaceCoin") +
-                        dbSystem.getUserKey(qfc.clicker.id, "profit.roadaCoin") +
-                        dbSystem.getUserKey(qfc.clicker.id, "profit.flagCoin") +
-                        dbSystem.getUserKey(qfc.clicker.id, "profit.timenCoin") +
-                        dbSystem.getUserKey(qfc.clicker.id, "profit.loyaliCoin")
-                        if (totalProfit > dbSystem.getUserKey(qfc.clicker.id, "high_profit")) dbSystem.setUserKey(qfc.clicker.id, "high_profit", totalProfit)
-                        dbSystem.setUserKey(qfc.clicker.id, "total_profit", totalProfit)
+                        const totalProfit = dbSystem.getUserKey(Query.clicker.id, "profit.perak") +
+                        dbSystem.getUserKey(Query.clicker.id, "profit.emas") +
+                        dbSystem.getUserKey(Query.clicker.id, "profit.platinum") +
+                        dbSystem.getUserKey(Query.clicker.id, "profit.diamond") +
+                        dbSystem.getUserKey(Query.clicker.id, "profit.balaceCoin") +
+                        dbSystem.getUserKey(Query.clicker.id, "profit.roadaCoin") +
+                        dbSystem.getUserKey(Query.clicker.id, "profit.flagCoin") +
+                        dbSystem.getUserKey(Query.clicker.id, "profit.timenCoin") +
+                        dbSystem.getUserKey(Query.clicker.id, "profit.loyaliCoin")
+                        if (totalProfit > dbSystem.getUserKey(Query.clicker.id, "high_profit")) dbSystem.setUserKey(Query.clicker.id, "high_profit", totalProfit)
+                        dbSystem.setUserKey(Query.clicker.id, "total_profit", totalProfit)
 
                         if (["perak", "emas", "platinum", "diamond"].includes(itemName[1])) sellVolume(itemName[1], jumlah)
-                        dbSystem.addUserKey(qfc.clicker.id, itemName[1], -jumlah)
-                        dbSystem.addUserKey(qfc.clicker.id, "uang", totalHarga)
-                        dbSystem.addUserKey(qfc.clicker.id, "jumlah_trading", 1)
+                        dbSystem.addUserKey(Query.clicker.id, itemName[1], -jumlah)
+                        dbSystem.addUserKey(Query.clicker.id, "uang", totalHarga)
+                        dbSystem.addUserKey(Query.clicker.id, "jumlah_trading", 1)
 
 
                         Client.editMessageText(`Berhasil melakuka penjualan!\nItem: ${itemName[1]}\nJumlah: ${formatNumber(jumlah)}\nTotal Harga: ${formatNumber(totalHarga)}`, {
-                            chat_id: qfc.clicker.id,
-                            message_id: qfc.msg.id,
+                            chat_id: Query.chat.id,
+                            message_id: Query.message.id,
                             reply_markup: {
                                 inline_keyboard: []
                             },
@@ -248,8 +274,8 @@ module.exports = async (Client, q) => {
                         }],
                     ]
                 }, {
-                    chat_id: qfc.clicker.id,
-                    message_id: qfc.msg.id
+                    chat_id: Query.chat.id,
+                    message_id: Query.message.id,
                 })
             } break
 
@@ -282,29 +308,29 @@ module.exports = async (Client, q) => {
                                 }],
                             ]
                         }, {
-                            chat_id: qfc.clicker.id,
-                            message_id: qfc.msg.id
+                            chat_id: Query.chat.id,
+                            message_id: Query.message.id,
                         })
 
                         return
                     } else {
                         const itemName = command.split("buy")[1]
                         const hSatu = dbSystem.getGlobalKey(itemName)
-                        const jumlah = Number(args[0]) || Math.floor(dbSystem.getUserKey(qfc.clicker.id, "uang") / dbSystem.getGlobalKey(itemName))
+                        const jumlah = Number(args[0]) || Math.floor(dbSystem.getUserKey(Query.clicker.id, "uang") / dbSystem.getGlobalKey(itemName))
                         const totalHarga = hSatu*jumlah
 
-                        if (jumlah <= 0 || dbSystem.getUserKey(qfc.clicker.id, "uang") < totalHarga)return Client.editMessageText("Gagal melakukan pembelian! (jumlah <= 0 atau uang kurang!)", {
-                            chat_id: qfc.clicker.id, message_id: qfc.msg.id, reply_markup: {
+                        if (jumlah <= 0 || dbSystem.getUserKey(Query.clicker.id, "uang") < totalHarga)return Client.editMessageText("Gagal melakukan pembelian! (jumlah <= 0 atau uang kurang!)", {
+                            chat_id: Query.chat.id, message_id: Query.message.id, reply_markup: {
                                 inline_keyboard: []}})
-                        dbSystem.addUserKey(qfc.clicker.id, itemName, jumlah)
-                        dbSystem.addUserKey(qfc.clicker.id, "uang", -totalHarga)
+                        dbSystem.addUserKey(Query.clicker.id, itemName, jumlah)
+                        dbSystem.addUserKey(Query.clicker.id, "uang", -totalHarga)
 
                         //save total modal
-                        dbSystem.addUserKey(qfc.clicker.id, `profit.${itemName}_modal`, totalHarga)
+                        dbSystem.addUserKey(Query.clicker.id, `profit.${itemName}_modal`, totalHarga)
 
                         Client.editMessageText(`Berhasil melakukan pembelian!\nItem: ${itemName}\nJumlah: ${formatNumber(jumlah)}\nTotal Harga: ${formatNumber(totalHarga)}`, {
-                            chat_id: qfc.clicker.id,
-                            message_id: qfc.msg.id,
+                            chat_id: Query.chat.id,
+                            message_id: Query.message.id,
                             reply_markup: {
                                 inline_keyboard: []
                             },
@@ -343,8 +369,8 @@ module.exports = async (Client, q) => {
                         }],
                     ]
                 }, {
-                    chat_id: qfc.clicker.id,
-                    message_id: qfc.msg.id
+                    chat_id: Query.chat.id,
+                    message_id: Query.message.id,
                 })
             } break
 
@@ -376,53 +402,53 @@ module.exports = async (Client, q) => {
                                 }],
                             ]
                         }, {
-                            chat_id: qfc.clicker.id,
-                            message_id: qfc.msg.id
+                            chat_id: Query.chat.id,
+                            message_id: Query.message.id,
                         })
 
                         return
                     } else {
                         const itemName = command.split("sell")[1]
                         const hSatu = dbSystem.getGlobalKey(itemName)
-                        const jumlah = Number(args[0]) || dbSystem.getUserKey(qfc.clicker.id, itemName)
+                        const jumlah = Number(args[0]) || dbSystem.getUserKey(Query.clicker.id, itemName)
                         const totalHarga = hSatu*jumlah
 
-                        if (jumlah <= 0 || dbSystem.getUserKey(qfc.clicker.id, itemName) < jumlah)return Client.editMessageText("Gagal melakukan penjualan! (jumlah <= 0 atau barang dimiliki kurang)", {
-                            chat_id: qfc.clicker.id, message_id: qfc.msg.id, reply_markup: {
+                        if (jumlah <= 0 || dbSystem.getUserKey(Query.clicker.id, itemName) < jumlah)return Client.editMessageText("Gagal melakukan penjualan! (jumlah <= 0 atau barang dimiliki kurang)", {
+                            chat_id: Query.chat.id, message_id: Query.message.id, reply_markup: {
                                 inline_keyboard: []}})
 
                         //tambah ke profit
-                        const dimiliki = dbSystem.getUserKey(qfc.clicker.id, itemName)
-                        const total_modal = dbSystem.getUserKey(qfc.clicker.id, "profit."+itemName+"_modal")
+                        const dimiliki = dbSystem.getUserKey(Query.clicker.id, itemName)
+                        const total_modal = dbSystem.getUserKey(Query.clicker.id, "profit."+itemName+"_modal")
                         const hargaRata = Math.round(total_modal / dimiliki)
                         const hasilProfit = (hSatu - hargaRata) * jumlah
                         let upModal = total_modal - (hargaRata*jumlah)
                         if (dimiliki - jumlah === 0) upModal = 0
-                        dbSystem.setUserKey(qfc.clicker.id, `profit.${itemName}_modal`, upModal)
-                        dbSystem.addUserKey(qfc.clicker.id, `profit.${itemName}`, hasilProfit)
+                        dbSystem.setUserKey(Query.clicker.id, `profit.${itemName}_modal`, upModal)
+                        dbSystem.addUserKey(Query.clicker.id, `profit.${itemName}`, hasilProfit)
 
                         //totsl.profit
-                        const totalProfit = dbSystem.getUserKey(qfc.clicker.id, "profit.perak") +
-                        dbSystem.getUserKey(qfc.clicker.id, "profit.emas") +
-                        dbSystem.getUserKey(qfc.clicker.id, "profit.platinum") +
-                        dbSystem.getUserKey(qfc.clicker.id, "profit.diamond") +
-                        dbSystem.getUserKey(qfc.clicker.id, "profit.balaceCoin") +
-                        dbSystem.getUserKey(qfc.clicker.id, "profit.roadaCoin") +
-                        dbSystem.getUserKey(qfc.clicker.id, "profit.flagCoin") +
-                        dbSystem.getUserKey(qfc.clicker.id, "profit.timenCoin") +
-                        dbSystem.getUserKey(qfc.clicker.id, "profit.loyaliCoin")
-                        if (totalProfit > dbSystem.getUserKey(qfc.clicker.id, "high_profit")) dbSystem.setUserKey(qfc.clicker.id, "high_profit", totalProfit)
-                        dbSystem.setUserKey(qfc.clicker.id, "total_profit", totalProfit)
+                        const totalProfit = dbSystem.getUserKey(Query.clicker.id, "profit.perak") +
+                        dbSystem.getUserKey(Query.clicker.id, "profit.emas") +
+                        dbSystem.getUserKey(Query.clicker.id, "profit.platinum") +
+                        dbSystem.getUserKey(Query.clicker.id, "profit.diamond") +
+                        dbSystem.getUserKey(Query.clicker.id, "profit.balaceCoin") +
+                        dbSystem.getUserKey(Query.clicker.id, "profit.roadaCoin") +
+                        dbSystem.getUserKey(Query.clicker.id, "profit.flagCoin") +
+                        dbSystem.getUserKey(Query.clicker.id, "profit.timenCoin") +
+                        dbSystem.getUserKey(Query.clicker.id, "profit.loyaliCoin")
+                        if (totalProfit > dbSystem.getUserKey(Query.clicker.id, "high_profit")) dbSystem.setUserKey(Query.clicker.id, "high_profit", totalProfit)
+                        dbSystem.setUserKey(Query.clicker.id, "total_profit", totalProfit)
 
 
-                        dbSystem.addUserKey(qfc.clicker.id, itemName, -jumlah)
-                        dbSystem.addUserKey(qfc.clicker.id, "uang", totalHarga)
-                        dbSystem.addUserKey(qfc.clicker.id, "jumlah_trading", 1)
+                        dbSystem.addUserKey(Query.clicker.id, itemName, -jumlah)
+                        dbSystem.addUserKey(Query.clicker.id, "uang", totalHarga)
+                        dbSystem.addUserKey(Query.clicker.id, "jumlah_trading", 1)
 
 
                         Client.editMessageText(`Berhasil melakukan penjualan!\nItem: ${itemName}\nJumlah: ${formatNumber(jumlah)}\nTotal Harga: ${formatNumber(totalHarga)}`, {
-                            chat_id: qfc.clicker.id,
-                            message_id: qfc.msg.id,
+                            chat_id: Query.chat.id,
+                            message_id: Query.message.id,
                             reply_markup: {
                                 inline_keyboard: []
                             },
@@ -500,8 +526,8 @@ module.exports = async (Client, q) => {
                 if (args[0].startsWith("ter")) teks += "\n\nnoted: jumlah diatas merupakan perhitungan leaderboard dari akhir season (merupakan top sultan/trader)"
 
                 Client.editMessageText(teks, {
-                    chat_id: qfc.clicker.id,
-                    message_id: qfc.msg.id,
+                    chat_id: Query.chat.id,
+                    message_id: Query.message.id,
                     reply_markup: {
                         inline_keyboard: []
                     }
@@ -521,8 +547,8 @@ module.exports = async (Client, q) => {
                             
                 const head = "🏆 Top user of "+jenis+" 🏆\n\n"
                 Client.editMessageText(head+top, {
-                    chat_id: qfc.chat.id,
-                    message_id: qfc.msg.id,
+                    chat_id: Query.chat.id,
+                    message_id: Query.message.id,
                     reply_markup: { inline_keyboard: [] }
                 })
             } break
@@ -531,10 +557,10 @@ module.exports = async (Client, q) => {
             case "lamar_pekerjaan": {
                 const pekerjaan_data = await dbSystem.getGlobalKey(`pekerjaan.${args[0]}`)[0]
     
-                dbSystem.setUserKey(qfc.clicker.id, "pekerjaan.pekerjaan", args[0])
+                dbSystem.setUserKey(Query.clicker.id, "pekerjaan.pekerjaan", args[0])
                 Client.editMessageText("Berhasil melamar pekerjaan "+args[0], {
-                    chat_id: qfc.chat.id,
-                    message_id: qfc.msg.id,
+                    chat_id: Query.chat.id,
+                    message_id: Query.message.id,
                     reply_markup: {
                         inline_keyboard: []
                     }
